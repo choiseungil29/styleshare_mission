@@ -1,0 +1,9 @@
+{
+  "python.pythonPath": "venv/bin/python3.7",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "pgdata": true,
+    "venv": true
+  }
+}
