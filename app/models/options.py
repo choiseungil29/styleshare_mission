@@ -12,7 +12,8 @@ class Option(Base):
   __tablename__ = 'options'
 
   color = Column(String)
-  size = Column(Integer)
+  size = Column(String)
   stock = Column(Integer)
 
   product_id = Column(Integer, ForeignKey('products.id'))
+  product = relationship('Product', back_populates='options')

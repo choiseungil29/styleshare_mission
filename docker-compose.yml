@@ -28,7 +28,7 @@ services:
     volumes:
       - ./alembic/versions:/usr/src/app/alembic/versions
     links:
-      - local_db # TODO: Alembic container와 db연결하기
+      - local_db
     depends_on:
       - local_db
     env_file:
