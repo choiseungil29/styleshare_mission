@@ -15,3 +15,9 @@ class Product(Base):
 
   shipping_price = Column(Integer)
   can_bundle = Column(Boolean)
+
+
+  def to_json(self):
+    data = Base.to_json(self)
+    data['options'] = [o.to_json() for o in self.options]
+    return data

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <div>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <a class="navbar-brand" href="/">스타일쉐어 미션</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+  
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="/cart">장바구니</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+  <div class="container">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <th>id</th>
+          <th>상품 이름</th>
+          <th>판매자</th>
+          <th>가격</th>
+          <th>옵션 선택</th>
+          <th>수량</th>
+          <th>장바구니 추가</th>
+        </thead>
+        <tbody>
+          {% for p in products %}
+          <tr>
+            <th scope="row">{{ p.id }}</th>
+            <td>{{ p.name }}</td>
+            <td>{{ p.provider }}</td>
+            <td>{{ p.price }}</td>
+            <td>
+              <div class="dropdown show">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="menu_{{ p.id }}"
+                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  옵션 선택
+                </button>
+                <div class="dropdown-menu" aria-labelledby="menu_{{ p.id }}">
+                  {% for o in p.options %}
+                  <a class="dropdown-item" id="menu_item_{{ o.id }}" href="#">{{ o.name }}</a>
+                  {% endfor %}
+                </div>
+              </div>
+            </td>
+            <td>
+              <input id="count_{{ p.id }}" type="number" class="form-control" min="0" max="0" value="0">
+            </td>
+            <td>
+              <button id="add_cart_{{ p.id }}" class="btn btn-seconday">+</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+  <script>
+    const MENU = 'menu_';
+    const MENU_ITEM = 'menu_item_';
+    const COUNT = 'count_';
+    const ADD_CART = 'add_cart_';
+
+    function init() {
+      const products = {{ products | tojson }};
+      products.forEach(p => {
+
+        p.options.forEach(o => {
+          $('#' + MENU_ITEM + o.id).click(() => {
+            $('#' + MENU + p.id).text(o.name);
+            $('#' + MENU + p.id).attr('data', JSON.stringify(o));
+            $('#' + COUNT + p.id).attr('max', o.stock);
+            if (o.stock > 0) {
+              $('#' + COUNT + p.id).attr('placeholder', '0-' + o.stock);
+            } else {
+              $('#' + COUNT + p.id).attr('placeholder', '재고가 모두 소진되었습니다.');
+            }
+          });
+        });
+        
+        $('#' + ADD_CART + p.id).click(() => {
+          let option = $('#' + MENU + p.id).attr('data');
+          if (option) {
+            option = JSON.parse(option);
+          }
+          let count = parseInt($('#' + COUNT + p.id)[0].value);
+
+          if (count > 0 && option) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || []
+            let orderInfo = {
+              order_code: p.id + '/' + option.id,
+              product: p,
+              option: option,
+              count: Math.min(count, option.stock)
+            }
+
+            let inCartData = cart.filter(i => i.order_code == orderInfo.order_code);
+            if (inCartData.length > 0) {
+              inCartData = inCartData[0];
+              inCartData.count = Math.min(inCartData.count + count, option.stock);
+            } else {
+              cart.push(orderInfo);
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            alert('장바구니에 담았습니다.');
+          } else {
+            alert('옵션 또는 수량을 잘못 입력하셨습니다.');
+          }
+
+        });
+      });
+    }
+    init();
+  </script>
+  <!-- <script type="text/javascript" src="{{ url_for('static', filename='index.js') }}">init({{ products }})</script> -->
+</body>
+
+</html>

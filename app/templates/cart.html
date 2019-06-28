@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <div>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <a class="navbar-brand" href="/">스타일쉐어 미션</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+  
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="/cart">장바구니</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container">
+    <table class="table table-hover" id="cart">
+      <thead>
+        <th>주문코드</th>
+        <th>판매자</th>
+        <th>이름</th>
+        <th>옵션</th>
+        <th>수량</th>
+        <th>구매</th>
+        <th>제거</th>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="container">
+    <div class="container">
+      <p>배송비 : <span id="shipping_price"></span>원</p>
+      <p>상품 가격 : <span id="product_price"></span>원</p>
+      <p>최종 가격 : <span id="total_price"></span>원</p>
+    </div>
+    <button class="btn btn-primary" id="buy">구매하기</button>
+  </div>
+
+  <template id="order_template">
+    <tr>
+      <th id="order_code" class="row"></th>
+      <th id="provider"></th>
+      <th id="product_name"></th>
+      <th id="option_name"></th>
+      <th id="count"><input type="number" class="form-control"></th>
+      <th><button class="btn" id="btn_buy">구매하기</button></th>
+      <th><button class="btn" id="buy_remove">제거하기</button></th>
+    </tr> </template> 
+  <script>
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+    let template = $('#order_template')[0];
+    let tableBody = $('#cart tbody');
+
+    cart.forEach((item, index, object) => {
+      let node = template.content.cloneNode(true);
+
+      node.querySelector('#order_code').textContent = item.order_code;
+      node.querySelector('#provider').textContent = item.product.provider;
+      node.querySelector('#product_name').textContent = item.product.name;
+      node.querySelector('#option_name').textContent = item.option.name;
+
+      node.querySelector('#btn_buy').addEventListener('click', async (e) => {
+        let target = e.target;
+        let res = await fetch('/api/buy', { method: 'POST', body: JSON.stringify([item]) });
+        res = await (res.json());
+        alert(`상품 가격은 ${res.product_price}원, 배송비는 ${res.shipping_price}원, 총 비용 ${res.total_price}원 결제되었습니다.`);
+        object.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        location.reload();
+      });
+
+      node.querySelector('#buy_remove').addEventListener('click', (e) => {
+        let target = e.target;
+        object.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        location.reload();
+      });
+
+      let countInput = node.querySelector('#count input');
+      countInput.addEventListener('input', (e) => {
+        item.count = parseInt(e.target.value);
+        if (item.count == 0) {
+          object.splice(index, 1);
+          localStorage.setItem('cart', JSON.stringify(cart));
+          location.reload();
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+      });
+
+      // TODO: Value changed될때마다 localStorage 수정
+      countInput.value = item.count;
+      countInput.setAttribute('min', 0);
+      countInput.setAttribute('max', item.option.stock);
+
+      tableBody.append(node);
+    });
+
+    $('#buy').click(async () => {
+        let res = await fetch('/api/buy', { method: 'POST', body: JSON.stringify(cart) });
+        res = await res.json();
+        alert(`상품 가격은 ${res.product_price}원, 배송비는 ${res.shipping_price}원, 총 비용 ${res.total_price}원 결제되었습니다.`);
+
+        localStorage.setItem('cart', JSON.stringify([]));
+        location.reload();
+    })
+
+    let calculateTotalPrice = () => {
+      console.log(cart);
+      let totalPrice = 0;
+
+      let productPrice = 0;
+      providers = {}
+      cart.forEach(i => {
+        if (i.count == 0) {
+          return;
+        }
+
+        productPrice += i.count * i.product.price;
+
+        if (!providers.hasOwnProperty(i.product.provider)) {
+          providers[i.product.provider] = [];
+        }
+        providers[i.product.provider].push(i.product);
+      });
+
+      let shippingPrice = 0;
+      Object.values(providers).forEach(provider => {
+        let bundle = provider.filter(i => i.can_bundle);
+        let notBundle = provider.filter(i => !i.can_bundle);
+
+        console.log(bundle.map(i => i.shipping_price));
+        let prices = bundle.map(i => i.shipping_price);
+        if (prices.length > 0) {
+          shippingPrice += Math.min(...prices);
+        }
+        notBundle.forEach(i => shippingPrice += i.shipping_price);
+      })
+
+      totalPrice = productPrice + shippingPrice;
+      $('#product_price').text(productPrice.toLocaleString());
+      $('#shipping_price').text(shippingPrice.toLocaleString());
+      $('#total_price').text(totalPrice.toLocaleString());
+    }
+
+    calculateTotalPrice();
+  </script>
+</body>
+
+</html>

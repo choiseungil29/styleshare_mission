@@ -20,17 +20,14 @@ class Base:
   @property
   def session(self):
     return session.object_session(self)
-    
 
-  '''def to_json(self):
-    # TODO: 자신의 column들을 탐색해 전부 JSON으로 변환 및 반환
+  def to_json(self):
     data = {}
     for column in self.__table__.columns:
       attr = getattr(self, column.key)
-      print(type(attr))
       if type(attr) is datetime:
         attr = int(attr.timestamp() * 1000)
       data[column.key] = attr
-    return data'''
+    return data
 
 Base = declarative_base(bind=engine, cls=Base)

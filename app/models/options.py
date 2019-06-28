@@ -17,3 +17,8 @@ class Option(Base):
 
   product_id = Column(Integer, ForeignKey('products.id'))
   product = relationship('Product', back_populates='options')
+
+  def to_json(self):
+    data = Base.to_json(self)
+    data['name'] = f'{self.size} / {self.color}'
+    return data
