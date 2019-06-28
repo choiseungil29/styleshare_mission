@@ -1,5 +1,5 @@
 # 스타일쉐어 미션
-### Uses: Python3.7, Flask, Alembic, Docker, Jinja2
+### Uses: Python3.7, Flask, SQLAlchemy, Alembic, Docker, Jinja2
 
 ## 환경 설정
 1. virtualenv 환경 설정 (virtualenv venv --python=python3.7)
